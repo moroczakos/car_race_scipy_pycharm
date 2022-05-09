@@ -17,37 +17,146 @@ if __name__ == '__main__':
 
 
 from tkinter import *
+from PIL import Image
+import numpy as np
+
+class Player:
+    def __init__(self, xPos, yPos):
+        self.xPos = xPos
+        self.yPos = yPos
+        self.xOldPos = xPos
+        self.yOldPos = yPos
+
+    def move(self, x, y):
+        xCenter = self.xPos+(self.xPos-self.xOldPos)
+        yCenter = self.yPos + (self.yPos - self.yOldPos)
+        self.xOldPos = self.xPos
+        self.yOldPos = self.yPos
+        self.xPos = xCenter + x
+        self.yPos = yCenter + y
+
+    def getPos(self):
+        return [self.xPos, self.yPos]
+
+    def penalty(self):
+        self.xPos=self.xOldPos
+        self.yPos=self.yOldPos
+
+    def getOldPos(self):
+        return [self.xOldPos, self.yOldPos]
+
 
 main = Tk()
 # Code to add widgets will go here...
-main.geometry("400x400")
+main.geometry("600x600")
 frame = Frame(main)
 frame.pack()
 
 controlButtonList = []
 
-canvas = Canvas(main, width=200, height=200)
+canvas = Canvas(main, width=500, height=500)
 canvas.pack()
 
-table = [[-1,0,0],[-1,-1,0],[0,0,0],[-1,0,-1],[0,0,-1]]
 
-def createField(canvas, table):
-    x_size = eval(canvas.cget("height"))//len(table)
-    y_size = eval(canvas.cget("width"))//len(table[0])
-    for i in range(0, len(table)):
-        for j in range(0, len(table[0])):
-            if (table[i][j]==-1):
-                temp = canvas.create_rectangle(0, 0, x_size, y_size, fill="red")
+def loadTrack(imageName):
+    """
+    Create a 2D map matrix based on a given image
+    :param imageName: image file name
+    :return: 2D array of the track
+    """
+    img = Image.open(imageName)
+    data = np.asarray(img).transpose(1,0,2)
+    height = data.shape[0]
+    width = data.shape[1]
+    map = np.zeros((height, width))
+
+    for i in range(0, height):
+        for j in range(0, width):
+            if (data[i][j] == [255, 0, 0]).all():
+                map[i][j] = -1
+            elif (data[i][j] == [255, 255, 255]).all():
+                map[i][j] = 0
+            elif (data[i][j] == [0, 255, 0]).all():
+                map[i][j] = 1
+            elif (data[i][j] == [0, 0, 255]).all():
+                map[i][j] = 100
             else:
-                temp = canvas.create_rectangle(0, 0, x_size, y_size, fill="green")
-            canvas.move(temp, i * x_size, j * y_size)
+                map[i][j] = -2
+
+    return map
 
 
-createField(canvas, table)
+mapTrack = loadTrack("large1.png")
+
+x_size = eval(canvas.cget("height")) // mapTrack.shape[0]
+y_size = eval(canvas.cget("width")) // mapTrack.shape[1]
+rectange_size = min(x_size, y_size)
+
+def createField(canvasName, mapTrack):
+    """
+    Draw the track based on the given map
+    :param canvasName: Canvas, draw on it
+    :param mapTrack: 2D array of the track
+    """
+    for i in range(0, mapTrack.shape[0]):
+        for j in range(0, mapTrack.shape[1]):
+            if mapTrack[i][j] == -1:
+                temp = canvasName.create_rectangle(0, 0, rectange_size, rectange_size, fill="red")
+            elif mapTrack[i][j] == 0:
+                temp = canvasName.create_rectangle(0, 0, rectange_size, rectange_size, fill="green")
+            elif mapTrack[i][j] == 100:
+                temp = canvasName.create_rectangle(0, 0, rectange_size, rectange_size, fill="white")
+            elif (mapTrack[i][j] == 1):
+                temp = canvasName.create_rectangle(0, 0, rectange_size, rectange_size, fill="blue")
+            canvasName.move(temp, i * rectange_size, j * rectange_size)
 
 
-def buttonClick(index):
+createField(canvas, mapTrack)
+
+player1 = Player(5,5)
+
+def create_circle(x, y, r, canvasName, color): #center coordinates, radius
+    x0 = x - r
+    y0 = y - r
+    x1 = x + r
+    y1 = y + r
+    return canvasName.create_oval(x0, y0, x1, y1, fill=color)
+
+def drawPlayer(canvasName, player):
+    pos = player1.getPos()
+    oldPos = player1.getOldPos()
+
+    xCenter = pos[0] + (pos[0] - oldPos[0])
+    yCenter = pos[1] + (pos[1] - oldPos[1])
+    for i in range(-1,2):
+        for j in range(-1,2):
+            create_circle((xCenter+i) * rectange_size, (yCenter+j) * rectange_size, 3, canvasName, "blue")
+
+    create_circle(pos[0] * rectange_size, pos[1] * rectange_size, 4, canvasName, "yellow")
+
+def updateCanvas(canvasName, mapTrack, player):
+    canvasName.delete("all")
+    createField(canvasName, mapTrack)
+    drawPlayer(canvasName, player)
+
+updateCanvas(canvas,mapTrack,player1)
+
+def validMovement(player, mapTrack):
+    pos = player.getPos()
+    if mapTrack[pos[0]][pos[1]] < 0:
+        return False
+    return True
+
+def buttonClick(canvasName, index):
+    x = index % 3 -1
+    y = index // 3 -1
+    print(x,y)
+    player1.move(x, y)
+    if not validMovement(player1, mapTrack):
+       player1.penalty()
+    updateCanvas(canvas,mapTrack,player1)
     print(index)
+    print(player1.getPos())
 
 
 for i in range(0, 9):
@@ -55,17 +164,15 @@ for i in range(0, 9):
     temp.grid(row=i // 3, column=i % 3)
     controlButtonList.append(temp)
 
-controlButtonList[0].config(command=lambda: buttonClick(1))
-controlButtonList[1].config(command=lambda: buttonClick(2))
-controlButtonList[2].config(command=lambda: buttonClick(3))
-controlButtonList[3].config(command=lambda: buttonClick(4))
-controlButtonList[4].config(command=lambda: buttonClick(5))
-controlButtonList[5].config(command=lambda: buttonClick(6))
-controlButtonList[6].config(command=lambda: buttonClick(7))
-controlButtonList[7].config(command=lambda: buttonClick(8))
-controlButtonList[8].config(command=lambda: buttonClick(9))
-
-
+controlButtonList[0].config(command=lambda: buttonClick(canvas,0))
+controlButtonList[1].config(command=lambda: buttonClick(canvas,1))
+controlButtonList[2].config(command=lambda: buttonClick(canvas,2))
+controlButtonList[3].config(command=lambda: buttonClick(canvas,3))
+controlButtonList[4].config(command=lambda: buttonClick(canvas,4))
+controlButtonList[5].config(command=lambda: buttonClick(canvas,5))
+controlButtonList[6].config(command=lambda: buttonClick(canvas,6))
+controlButtonList[7].config(command=lambda: buttonClick(canvas,7))
+controlButtonList[8].config(command=lambda: buttonClick(canvas,8))
 
 if __name__ == "__main__":
     main.mainloop()
