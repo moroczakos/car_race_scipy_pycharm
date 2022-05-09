@@ -216,24 +216,24 @@ def validLine(pos1, pos2):
     :param pos2: position 2
     :return: True/False
     """
-    dx = pos2[0]- pos1[0]
+    dx = pos2[0] - pos1[0]
     dy = pos2[1] - pos1[1]
 
     if np.abs(dx) > 0:
         d = dy/dx
         for i in range(0, np.abs(dx)+1):
-            ty = pos1[0]+i*np.sign(dx)
-            txf = np.floor(pos1[1]+i*np.sign(dx))
-            txc = np.ceil(pos1[1] + i * np.sign(dx))
-            if mapTrack[txf][ty]<0 & mapTrack[txc][ty]<0:
+            tx = pos1[0]+i*np.sign(dx)
+            tyf = int(np.floor(pos1[1]+i*d*np.sign(dx)))
+            tyc = int(np.ceil(pos1[1] + i*d * np.sign(dx)))
+            if (mapTrack[tx][tyf]<0) & (mapTrack[tx][tyc]<0):
                 return False
     if np.abs(dy) > 0:
         d = dx/dy
         for i in range(0, np.abs(dy)+1):
             ty = pos1[1]+i*np.sign(dy)
-            txf = np.floor(pos1[0]+i*np.sign(dy))
-            txc = np.ceil(pos1[0] + i * np.sign(dy))
-            if mapTrack[txf][ty]<0 & mapTrack[txc][ty]<0:
+            txf = int(np.floor(pos1[0]+i*d*np.sign(dy)))
+            txc = int(np.ceil(pos1[0] + i*d * np.sign(dy)))
+            if (mapTrack[txf][ty]<0) & (mapTrack[txc][ty]<0):
                 return False
     return True
 
