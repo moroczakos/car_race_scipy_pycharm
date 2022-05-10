@@ -94,7 +94,7 @@ def create_circle(x, y, r, canvasName, fillColor, outlineColor, width):  # cente
     return canvasName.create_oval(x0, y0, x1, y1, fill=fillColor, outline=outlineColor, width=width)
 
 
-def drawPlayer(canvasName, player):
+def drawPlayer(canvasName, player, radius):
     """
     Draw the position of the player and the possible positions to move
     :param canvasName: name of the canvas
@@ -107,10 +107,10 @@ def drawPlayer(canvasName, player):
     yCenter = pos[1] + (pos[1] - oldPos[1])
     for i in range(-1, 2):
         for j in range(-1, 2):
-            create_circle((xCenter + i) * rectange_size, (yCenter + j) * rectange_size, 3, canvasName, "",
+            create_circle((xCenter + i) * rectange_size, (yCenter + j) * rectange_size, radius-1, canvasName, "",
                           player.getColor(), 1)
 
-    create_circle(pos[0] * rectange_size, pos[1] * rectange_size, 4, canvasName, player.getColor(), "black", 1)
+    create_circle(pos[0] * rectange_size, pos[1] * rectange_size, radius, canvasName, player.getColor(), "black", 1)
 
 
 def drawPlayerPath(canvasName, player):
@@ -138,7 +138,7 @@ def updateCanvas(canvasName, playerList):
     canvasName.delete("all")
     createField(canvasName)
     for player in playerList:
-        drawPlayer(canvasName, player)
+        drawPlayer(canvasName, player, 4)
         drawPlayerPath(canvasName, player)
 
 
@@ -209,42 +209,57 @@ def equalPoints(pos1, pos2):
         return True
     return False
 
+def nextPlayerToMove(currentPlayerList):
+    currentPlayer = currentPlayerList.pop()
+    numOfPenalty = currentPlayer.getPenaltyRounds()
+    while numOfPenalty > 0:
+        currentPlayer.step()
+        writeTextArea(currentPlayer.getName() + " is in penalty for " + str(numOfPenalty) + " more rounds.")
+        currentPlayer.setPenaltyRounds(numOfPenalty - 1)
+        currentPlayerList.insert(0, currentPlayer)
+        currentPlayer = currentPlayerList.pop()
+        numOfPenalty = currentPlayer.getPenaltyRounds()
+    return currentPlayer
 
-def buttonClick(canvasName, index):
+def buttonClick(canvasName, x, y):
     """
     Button click event: move the player
     :param canvasName: name of the canvas
-    :param index: index of the button
+    :param x: move direction x
+    :param y: move direction y
     """
     # print(x, y)
     if len(currentPlayerList) > 0:
-        x = index % 3 - 1
-        y = index // 3 - 1
-        currentPlayer = currentPlayerList.pop()
-        currentPlayer.move(x, y)
+        currentPlayer = nextPlayerToMove(currentPlayerList)
 
+        currentPlayer.move(x, y)
+        currentPlayer.step()
+        stepNum = str(currentPlayer.getStepNumber())
         if not validMovement(currentPlayer):
             currentPlayer.penalty()
-            writeTextArea(
-                currentPlayer.getName() + " is out of track or collided with other player. Penalty for 5 rounds. (step #x)")
+            writeTextArea(currentPlayer.getName() + " is out of track or collided with other player. Penalty for 5 rounds. (step #" + stepNum + ")")
 
         if not isFinished(currentPlayer.getPos()):
             currentPlayerList.insert(0, currentPlayer)
         else:
-            writeTextArea(currentPlayer.getName() + " has reached the finish position. (step #x)")
+            writeTextArea(currentPlayer.getName() + " has reached the finish position. (step #" + stepNum + ")")
 
-        updateCanvas(canvas, playerList)
+
+        updateCanvas(canvasName, playerList)
         if len(currentPlayerList) > 0:
-            writeTextArea(currentPlayerList[-1].getName() + " is to move (step #x)")
+            nextPlayer = nextPlayerToMove(currentPlayerList)
+            currentPlayerList.append(nextPlayer)
+            writeTextArea(nextPlayer.getName() + " is to move (step #" + str(nextPlayer.getStepNumber()) + ")")
+            drawPlayer(canvasName, nextPlayer, 6)
     # print(index)
     # print(isFinished(currentPlayer.getPos()))
 
 
 def writeTextArea(string):
-    text_area.configure(state='normal')
-    text_area.insert(tk.INSERT, string + "\n")
-    text_area.configure(state='disabled')
-    text_area.yview(END)
+    textArea.configure(state='normal')
+    textArea.insert(tk.INSERT, string + "\n")
+    textArea.configure(state='disabled')
+    textArea.yview(END)
 
 
 def addButtonAction():
@@ -270,10 +285,11 @@ def startButtonAction():
         text1.pack_forget()
         label1.pack_forget()
         startButton.pack_forget()
-        text_area.pack(side=LEFT)
+        textArea.pack(side=LEFT)
         frameButton.pack(side=RIGHT, padx=10)
         updateCanvas(canvas, playerList)
-        writeTextArea(playerList[-1].getName() + " is to move (step #x)")
+        drawPlayer(canvas, currentPlayerList[-1], 6)
+        writeTextArea(playerList[-1].getName() + " is to move (step #" + str(currentPlayerList[-1].getStepNumber()) + ")")
     else:
         label1.config(text="No player is added! Add a player!")
 
@@ -313,7 +329,7 @@ buttonAdd.pack(side=LEFT, padx=10)
 startButton = Button(frameRoot, width=5, height=1, text="Start", command=lambda: startButtonAction())
 startButton.pack(padx=10)
 
-text_area = st.ScrolledText(frameRoot, width=50, height=10, font=12)
+textArea = st.ScrolledText(frameRoot, width=60, height=10, font=12)
 # text_area.pack(side=LEFT)
 writeTextArea("Grid game")
 writeTextArea("Test")
@@ -329,15 +345,15 @@ for i in range(0, 9):
     temp.grid(row=i // 3, column=i % 3)
     controlButtonList.append(temp)
 
-controlButtonList[0].config(text="↖", command=lambda: buttonClick(canvas, 0))
-controlButtonList[1].config(text="↑", command=lambda: buttonClick(canvas, 1))
-controlButtonList[2].config(text="↗", command=lambda: buttonClick(canvas, 2))
-controlButtonList[3].config(text="←", command=lambda: buttonClick(canvas, 3))
-controlButtonList[4].config(text=".", command=lambda: buttonClick(canvas, 4))
-controlButtonList[5].config(text="→", command=lambda: buttonClick(canvas, 5))
-controlButtonList[6].config(text="↙", command=lambda: buttonClick(canvas, 6))
-controlButtonList[7].config(text="↓", command=lambda: buttonClick(canvas, 7))
-controlButtonList[8].config(text="↘", command=lambda: buttonClick(canvas, 8))
+controlButtonList[0].config(text="↖", command=lambda: buttonClick(canvas, -1, -1))
+controlButtonList[1].config(text="↑", command=lambda: buttonClick(canvas, 0, -1))
+controlButtonList[2].config(text="↗", command=lambda: buttonClick(canvas, 1, -1))
+controlButtonList[3].config(text="←", command=lambda: buttonClick(canvas, -1, 0))
+controlButtonList[4].config(text=".", command=lambda: buttonClick(canvas, 0, 0))
+controlButtonList[5].config(text="→", command=lambda: buttonClick(canvas, 1, 0))
+controlButtonList[6].config(text="↙", command=lambda: buttonClick(canvas, -1, 1))
+controlButtonList[7].config(text="↓", command=lambda: buttonClick(canvas, 0, 1))
+controlButtonList[8].config(text="↘", command=lambda: buttonClick(canvas, 1, 1))
 
 if __name__ == "__main__":
     main.mainloop()

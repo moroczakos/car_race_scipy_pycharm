@@ -8,6 +8,8 @@ class Player:
         self.visitedPositions = []
         self.visitedPositions.append([self.xPos, self.yPos])
         self.color = color
+        self.penaltyRounds = 0
+        self.stepNumber = 1
 
     def getName(self):
         return self.name
@@ -22,8 +24,20 @@ class Player:
         self.visitedPositions.append([self.xPos, self.yPos])
         #print(validLine(self.getOldPos(), self.getPos()))
 
+    def setPenaltyRounds(self, numOfPenalty):
+        self.penaltyRounds = numOfPenalty
+
+    def getPenaltyRounds(self):
+        return self.penaltyRounds
+
     def getVisitedPositions(self):
         return self.visitedPositions
+
+    def getStepNumber(self):
+        return self.stepNumber
+
+    def step(self):
+        self.stepNumber = self.stepNumber + 1
 
     def getPos(self):
         return [self.xPos, self.yPos]
@@ -35,6 +49,7 @@ class Player:
         self.xPos = self.xOldPos
         self.yPos = self.yOldPos
         self.visitedPositions.append([self.xPos, self.yPos])
+        self.setPenaltyRounds(4)
 
     def getOldPos(self):
         return [self.xOldPos, self.yOldPos]
