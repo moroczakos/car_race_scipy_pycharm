@@ -149,13 +149,10 @@ def validMovement(player):
     :return: True/False
     """
     pos = player.getPos()
-    name = player.getName()
     if mapTrack[pos[0]][pos[1]] < 0:
         return False
     for i in range(0, len(playerList)):
-        name2 = playerList[i].getName()
-        pos2 = playerList[i].getPos()
-        if (name != name2) & (pos2[0] == pos[0]) & (pos2[1] == pos[1]):
+        if (i != playerAt(pos)) & equalPoints(pos, playerList[i].getPos()):
             return False
     return True
 
@@ -189,6 +186,30 @@ def validLine(pos1, pos2):
     return True
 
 
+def playerAt(pos):
+    """
+    Return the index of that player at given position, otherwise -1
+    :param pos: position [x, y]
+    :return: index of player it exist or -1
+    """
+    for i in range(0, len(playerList)):
+        if equalPoints(pos, playerList[i].getPos()):
+            return i
+    return -1
+
+
+def equalPoints(pos1, pos2):
+    """
+    If two positions are the same
+    :param pos1: position 1 [x, y]
+    :param pos2: position 2 [x, y]
+    :return: True/False
+    """
+    if (pos1[0] == pos2[0]) & (pos1[1] == pos2[1]):
+        return True
+    return False
+
+
 def buttonClick(canvasName, index):
     """
     Button click event: move the player
@@ -196,7 +217,7 @@ def buttonClick(canvasName, index):
     :param index: index of the button
     """
     # print(x, y)
-    if len(currentPlayerList)>0:
+    if len(currentPlayerList) > 0:
         x = index % 3 - 1
         y = index // 3 - 1
         currentPlayer = currentPlayerList.pop()
@@ -212,18 +233,19 @@ def buttonClick(canvasName, index):
         else:
             writeTextArea(currentPlayer.getName() + " has reached the finish position. (step #x)")
 
-
         updateCanvas(canvas, playerList)
         if len(currentPlayerList) > 0:
             writeTextArea(currentPlayerList[-1].getName() + " is to move (step #x)")
     # print(index)
     # print(isFinished(currentPlayer.getPos()))
 
+
 def writeTextArea(string):
     text_area.configure(state='normal')
     text_area.insert(tk.INSERT, string + "\n")
     text_area.configure(state='disabled')
     text_area.yview(END)
+
 
 def addButtonAction():
     if len(startPositions) > 0:
@@ -241,6 +263,7 @@ def addButtonAction():
         text1.pack_forget()
         label1.config(text="No more player can be added!")
 
+
 def startButtonAction():
     if len(playerList) > 0:
         buttonAdd.pack_forget()
@@ -254,6 +277,7 @@ def startButtonAction():
     else:
         label1.config(text="No player is added! Add a player!")
 
+
 main = Tk()
 main.title("Grid race")
 main.geometry("800x800")
@@ -263,7 +287,7 @@ startPositions = []
 finishPositions = []
 playerList = []
 currentPlayerList = []
-colors=['#822A8A','#A8A228','#00FF00','#C9FF00','#6688CC','#88CC66']
+colors = ['#822A8A', '#A8A228', '#00FF00', '#C9FF00', '#6688CC', '#88CC66']
 
 canvas = Canvas(main, width=800, height=600)
 canvas.pack(side=TOP, padx=100, pady=10)
@@ -279,8 +303,8 @@ createField(canvas)
 frameRoot = Frame(main)
 frameRoot.pack(side=BOTTOM, pady=(0, 50))
 
-label1 = Label(frameRoot, text = "Add new player:")
-label1.config(font = 12)
+label1 = Label(frameRoot, text="Add new player:")
+label1.config(font=12)
 label1.pack()
 text1 = Text(frameRoot, width=20, height=1)
 text1.pack(side=LEFT)
@@ -289,19 +313,17 @@ buttonAdd.pack(side=LEFT, padx=10)
 startButton = Button(frameRoot, width=5, height=1, text="Start", command=lambda: startButtonAction())
 startButton.pack(padx=10)
 
-text_area = st.ScrolledText(frameRoot, width = 50, height = 10, font = 12)
-#text_area.pack(side=LEFT)
+text_area = st.ScrolledText(frameRoot, width=50, height=10, font=12)
+# text_area.pack(side=LEFT)
 writeTextArea("Grid game")
 writeTextArea("Test")
 
-
-
-#startPos = getRandomStartPosition()
-#player1 = player.Player("player1", startPos[0], startPos[1], "yellow")
+# startPos = getRandomStartPosition()
+# player1 = player.Player("player1", startPos[0], startPos[1], "yellow")
 
 
 frameButton = Frame(frameRoot)
-#frameButton.pack(side=RIGHT, padx=10)
+# frameButton.pack(side=RIGHT, padx=10)
 for i in range(0, 9):
     temp = Button(frameButton, name=str(i), width=2, height=2)
     temp.grid(row=i // 3, column=i % 3)
@@ -319,5 +341,3 @@ controlButtonList[8].config(text="↘", command=lambda: buttonClick(canvas, 8))
 
 if __name__ == "__main__":
     main.mainloop()
-
-
