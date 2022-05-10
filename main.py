@@ -19,7 +19,7 @@ if __name__ == '__main__':
 from tkinter import *
 from PIL import Image
 import numpy as np
-
+import random
 
 class Player:
     def __init__(self, xPos, yPos, color):
@@ -39,7 +39,7 @@ class Player:
         self.xPos = xCenter + x
         self.yPos = yCenter + y
         self.visitedPositions.append([self.xPos, self.yPos])
-        print(validLine(self.getOldPos(), self.getPos()))
+        #print(validLine(self.getOldPos(), self.getPos()))
 
     def getVisitedPositions(self):
         return self.visitedPositions
@@ -66,6 +66,8 @@ frame = Frame(main)
 frame.pack()
 
 controlButtonList = []
+startPositions = []
+finishPositions = []
 
 canvas = Canvas(main, width=700, height=700)
 canvas.pack()
@@ -91,14 +93,16 @@ def loadTrack(imageName):
                 map[i][j] = 0
             elif (data[i][j] == [0, 255, 0]).all():
                 map[i][j] = 1
+                startPositions.append([i, j])
             elif (data[i][j] == [0, 0, 255]).all():
                 map[i][j] = 100
+                finishPositions.append([i, j])
             else:
                 map[i][j] = -1
     return map
 
 
-mapTrack = loadTrack("large1.png")
+mapTrack = loadTrack("straight.png")
 
 x_size = eval(canvas.cget("height")) // mapTrack.shape[0]
 y_size = eval(canvas.cget("width")) // mapTrack.shape[1]
@@ -121,13 +125,23 @@ def createField(canvasName):
                 temp = canvasName.create_rectangle(0, 0, rectange_size, rectange_size, fill="white")
             elif (mapTrack[i][j] == 1):
                 temp = canvasName.create_rectangle(0, 0, rectange_size, rectange_size, fill="blue")
-            canvasName.move(temp, i * rectange_size, j * rectange_size)
+            canvasName.move(temp, int((i-0.5) * rectange_size), int((j-0.5) * rectange_size))
 
 
 createField(canvas)
 
-player1 = Player(5, 5, "yellow")
+def getRandomStartPosition():
+    random.shuffle(startPositions)
+    return startPositions.pop()
 
+def isFinished(pos):
+    #print(mapTrack[pos[0]][pos[1]])
+    if mapTrack[pos[0]][pos[1]] == 100:
+        return True
+    return False
+
+startPos = getRandomStartPosition()
+player1 = Player(startPos[0], startPos[1], "yellow")
 
 def create_circle(x, y, r, canvasName, fillColor, outlineColor, width):  # center coordinates, radius
     """
@@ -242,7 +256,9 @@ def buttonClick(canvasName, index):
     x = index % 3 - 1
     y = index // 3 - 1
     #print(x, y)
-    player1.move(x, y)
+    if not isFinished(player1.getPos()):
+        player1.move(x, y)
+
     if not validMovement(player1):
         player1.penalty()
     updateCanvas(canvas, player1)
