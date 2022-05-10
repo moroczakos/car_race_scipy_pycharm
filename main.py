@@ -1,76 +1,10 @@
-# This is a sample Python script.
-
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
-
-
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
-
-
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
-
-
 from tkinter import *
+import tkinter as tk
+import tkinter.scrolledtext as st
 from PIL import Image
 import numpy as np
 import random
-
-class Player:
-    def __init__(self, xPos, yPos, color):
-        self.xPos = xPos
-        self.yPos = yPos
-        self.xOldPos = xPos
-        self.yOldPos = yPos
-        self.visitedPositions = []
-        self.visitedPositions.append([self.xPos, self.yPos])
-        self.color = color
-
-    def move(self, x, y):
-        xCenter = self.xPos + (self.xPos - self.xOldPos)
-        yCenter = self.yPos + (self.yPos - self.yOldPos)
-        self.xOldPos = self.xPos
-        self.yOldPos = self.yPos
-        self.xPos = xCenter + x
-        self.yPos = yCenter + y
-        self.visitedPositions.append([self.xPos, self.yPos])
-        #print(validLine(self.getOldPos(), self.getPos()))
-
-    def getVisitedPositions(self):
-        return self.visitedPositions
-
-    def getPos(self):
-        return [self.xPos, self.yPos]
-
-    def getColor(self):
-        return self.color
-
-    def penalty(self):
-        self.xPos = self.xOldPos
-        self.yPos = self.yOldPos
-        self.visitedPositions.append([self.xPos, self.yPos])
-
-    def getOldPos(self):
-        return [self.xOldPos, self.yOldPos]
-
-
-main = Tk()
-# Code to add widgets will go here...
-main.geometry("900x900")
-frame = Frame(main)
-frame.pack()
-
-controlButtonList = []
-startPositions = []
-finishPositions = []
-
-canvas = Canvas(main, width=700, height=700)
-canvas.pack()
+import player
 
 
 def loadTrack(imageName):
@@ -102,13 +36,6 @@ def loadTrack(imageName):
     return map
 
 
-mapTrack = loadTrack("straight.png")
-
-x_size = eval(canvas.cget("height")) // mapTrack.shape[0]
-y_size = eval(canvas.cget("width")) // mapTrack.shape[1]
-rectange_size = min(x_size, y_size)
-
-
 def createField(canvasName):
     """
     Draw the track based on the given map
@@ -125,23 +52,28 @@ def createField(canvasName):
                 temp = canvasName.create_rectangle(0, 0, rectange_size, rectange_size, fill="white")
             elif (mapTrack[i][j] == 1):
                 temp = canvasName.create_rectangle(0, 0, rectange_size, rectange_size, fill="blue")
-            canvasName.move(temp, int((i-0.5) * rectange_size), int((j-0.5) * rectange_size))
+            canvasName.move(temp, int((i - 0.5) * rectange_size), int((j - 0.5) * rectange_size))
 
-
-createField(canvas)
 
 def getRandomStartPosition():
+    """
+    Return one of the starting positions randomly
+    :return: starting position [x, y]
+    """
     random.shuffle(startPositions)
     return startPositions.pop()
 
+
 def isFinished(pos):
-    #print(mapTrack[pos[0]][pos[1]])
+    """
+    Is the position finished position
+    :param pos: position [x, y]
+    :return: True/False
+    """
     if mapTrack[pos[0]][pos[1]] == 100:
         return True
     return False
 
-startPos = getRandomStartPosition()
-player1 = Player(startPos[0], startPos[1], "yellow")
 
 def create_circle(x, y, r, canvasName, fillColor, outlineColor, width):  # center coordinates, radius
     """
@@ -197,7 +129,7 @@ def drawPlayerPath(canvasName, player):
                   1)
 
 
-def updateCanvas(canvasName, player):
+def updateCanvas(canvasName, playerList):
     """
     After each step update the canvas: player position, path and possible next positions
     :param canvasName:
@@ -205,23 +137,28 @@ def updateCanvas(canvasName, player):
     """
     canvasName.delete("all")
     createField(canvasName)
-    drawPlayer(canvasName, player)
-    drawPlayerPath(canvasName, player)
-
-
-updateCanvas(canvas, player1)
+    for player in playerList:
+        drawPlayer(canvasName, player)
+        drawPlayerPath(canvasName, player)
 
 
 def validMovement(player):
     """
-    Next position is valid or not (on the track)
+    Next position is valid or not (on the track, or on the other player)
     :param player: player
     :return: True/False
     """
     pos = player.getPos()
+    name = player.getName()
     if mapTrack[pos[0]][pos[1]] < 0:
         return False
+    for i in range(0, len(playerList)):
+        name2 = playerList[i].getName()
+        pos2 = playerList[i].getPos()
+        if (name != name2) & (pos2[0] == pos[0]) & (pos2[1] == pos[1]):
+            return False
     return True
+
 
 def validLine(pos1, pos2):
     """
@@ -234,84 +171,153 @@ def validLine(pos1, pos2):
     dy = pos2[1] - pos1[1]
 
     if np.abs(dx) > 0:
-        d = dy/dx
-        for i in range(0, np.abs(dx)+1):
-            tx = pos1[0]+i*np.sign(dx)
-            tyf = int(np.floor(pos1[1]+i*d*np.sign(dx)))
-            tyc = int(np.ceil(pos1[1] + i*d * np.sign(dx)))
-            if (mapTrack[tx][tyf]<0) & (mapTrack[tx][tyc]<0):
+        d = dy / dx
+        for i in range(0, np.abs(dx) + 1):
+            tx = pos1[0] + i * np.sign(dx)
+            tyf = int(np.floor(pos1[1] + i * d * np.sign(dx)))
+            tyc = int(np.ceil(pos1[1] + i * d * np.sign(dx)))
+            if (mapTrack[tx][tyf] < 0) & (mapTrack[tx][tyc] < 0):
                 return False
     if np.abs(dy) > 0:
-        d = dx/dy
-        for i in range(0, np.abs(dy)+1):
-            ty = pos1[1]+i*np.sign(dy)
-            txf = int(np.floor(pos1[0]+i*d*np.sign(dy)))
-            txc = int(np.ceil(pos1[0] + i*d * np.sign(dy)))
-            if (mapTrack[txf][ty]<0) & (mapTrack[txc][ty]<0):
+        d = dx / dy
+        for i in range(0, np.abs(dy) + 1):
+            ty = pos1[1] + i * np.sign(dy)
+            txf = int(np.floor(pos1[0] + i * d * np.sign(dy)))
+            txc = int(np.ceil(pos1[0] + i * d * np.sign(dy)))
+            if (mapTrack[txf][ty] < 0) & (mapTrack[txc][ty] < 0):
                 return False
     return True
 
 
 def buttonClick(canvasName, index):
-    x = index % 3 - 1
-    y = index // 3 - 1
-    #print(x, y)
-    if not isFinished(player1.getPos()):
-        player1.move(x, y)
+    """
+    Button click event: move the player
+    :param canvasName: name of the canvas
+    :param index: index of the button
+    """
+    # print(x, y)
+    if len(currentPlayerList)>0:
+        x = index % 3 - 1
+        y = index // 3 - 1
+        currentPlayer = currentPlayerList.pop()
+        currentPlayer.move(x, y)
 
-    if not validMovement(player1):
-        player1.penalty()
-    updateCanvas(canvas, player1)
-    #print(index)
-    #print(player1.getPos())
+        if not validMovement(currentPlayer):
+            currentPlayer.penalty()
+            writeTextArea(
+                currentPlayer.getName() + " is out of track or collided with other player. Penalty for 5 rounds. (step #x)")
+
+        if not isFinished(currentPlayer.getPos()):
+            currentPlayerList.insert(0, currentPlayer)
+        else:
+            writeTextArea(currentPlayer.getName() + " has reached the finish position. (step #x)")
 
 
+        updateCanvas(canvas, playerList)
+        if len(currentPlayerList) > 0:
+            writeTextArea(currentPlayerList[-1].getName() + " is to move (step #x)")
+    # print(index)
+    # print(isFinished(currentPlayer.getPos()))
+
+def writeTextArea(string):
+    text_area.configure(state='normal')
+    text_area.insert(tk.INSERT, string + "\n")
+    text_area.configure(state='disabled')
+    text_area.yview(END)
+
+def addButtonAction():
+    if len(startPositions) > 0:
+        startPos = getRandomStartPosition()
+        s = text1.get('1.0', 'end')
+        s = s.strip()
+        if s == "":
+            s = "Player" + len(startPositions)
+        tempPlayer = player.Player(s, startPos[0], startPos[1], colors.pop())
+        playerList.insert(0, tempPlayer)
+        currentPlayerList.insert(0, tempPlayer)
+        text1.delete('1.0', 'end')
+    else:
+        buttonAdd.pack_forget()
+        text1.pack_forget()
+        label1.config(text="No more player can be added!")
+
+def startButtonAction():
+    if len(playerList) > 0:
+        buttonAdd.pack_forget()
+        text1.pack_forget()
+        label1.pack_forget()
+        startButton.pack_forget()
+        text_area.pack(side=LEFT)
+        frameButton.pack(side=RIGHT, padx=10)
+        updateCanvas(canvas, playerList)
+        writeTextArea(playerList[-1].getName() + " is to move (step #x)")
+    else:
+        label1.config(text="No player is added! Add a player!")
+
+main = Tk()
+main.title("Grid race")
+main.geometry("800x800")
+
+controlButtonList = []
+startPositions = []
+finishPositions = []
+playerList = []
+currentPlayerList = []
+colors=['#822A8A','#A8A228','#00FF00','#C9FF00','#6688CC','#88CC66']
+
+canvas = Canvas(main, width=800, height=600)
+canvas.pack(side=TOP, padx=100, pady=10)
+
+mapTrack = loadTrack("straight.png")
+
+x_size = eval(canvas.cget("height")) // mapTrack.shape[0]
+y_size = eval(canvas.cget("width")) // mapTrack.shape[1]
+rectange_size = min(x_size, y_size)
+
+createField(canvas)
+
+frameRoot = Frame(main)
+frameRoot.pack(side=BOTTOM, pady=(0, 50))
+
+label1 = Label(frameRoot, text = "Add new player:")
+label1.config(font = 12)
+label1.pack()
+text1 = Text(frameRoot, width=20, height=1)
+text1.pack(side=LEFT)
+buttonAdd = Button(frameRoot, width=3, height=1, text="Add", command=lambda: addButtonAction())
+buttonAdd.pack(side=LEFT, padx=10)
+startButton = Button(frameRoot, width=5, height=1, text="Start", command=lambda: startButtonAction())
+startButton.pack(padx=10)
+
+text_area = st.ScrolledText(frameRoot, width = 50, height = 10, font = 12)
+#text_area.pack(side=LEFT)
+writeTextArea("Grid game")
+writeTextArea("Test")
+
+
+
+#startPos = getRandomStartPosition()
+#player1 = player.Player("player1", startPos[0], startPos[1], "yellow")
+
+
+frameButton = Frame(frameRoot)
+#frameButton.pack(side=RIGHT, padx=10)
 for i in range(0, 9):
-    temp = Button(frame, text=str(i), name=str(i), width=2, height=2)
+    temp = Button(frameButton, name=str(i), width=2, height=2)
     temp.grid(row=i // 3, column=i % 3)
     controlButtonList.append(temp)
 
-controlButtonList[0].config(command=lambda: buttonClick(canvas, 0))
-controlButtonList[1].config(command=lambda: buttonClick(canvas, 1))
-controlButtonList[2].config(command=lambda: buttonClick(canvas, 2))
-controlButtonList[3].config(command=lambda: buttonClick(canvas, 3))
-controlButtonList[4].config(command=lambda: buttonClick(canvas, 4))
-controlButtonList[5].config(command=lambda: buttonClick(canvas, 5))
-controlButtonList[6].config(command=lambda: buttonClick(canvas, 6))
-controlButtonList[7].config(command=lambda: buttonClick(canvas, 7))
-controlButtonList[8].config(command=lambda: buttonClick(canvas, 8))
+controlButtonList[0].config(text="↖", command=lambda: buttonClick(canvas, 0))
+controlButtonList[1].config(text="↑", command=lambda: buttonClick(canvas, 1))
+controlButtonList[2].config(text="↗", command=lambda: buttonClick(canvas, 2))
+controlButtonList[3].config(text="←", command=lambda: buttonClick(canvas, 3))
+controlButtonList[4].config(text=".", command=lambda: buttonClick(canvas, 4))
+controlButtonList[5].config(text="→", command=lambda: buttonClick(canvas, 5))
+controlButtonList[6].config(text="↙", command=lambda: buttonClick(canvas, 6))
+controlButtonList[7].config(text="↓", command=lambda: buttonClick(canvas, 7))
+controlButtonList[8].config(text="↘", command=lambda: buttonClick(canvas, 8))
 
 if __name__ == "__main__":
     main.mainloop()
 
-"""
-        
-            
-btn1 = Button(frame, text="", name="btn1", command=lambda: buttonClick(1))
-btn1.grid(row=0, column=0)
-controlButtonList.append(btn1)
-btn2 = Button(frame, text="", name="btn2", command=lambda: buttonClick(2))
-btn2.grid(row=0, column=1)
-controlButtonList.append(btn2)
-btn3 = Button(frame, text="", name="btn3", command=lambda: buttonClick(3))
-btn3.grid(row=0, column=2)
-controlButtonList.append(btn3)
-btn4 = Button(frame, text="", name="btn4", command=lambda: buttonClick(4))
-btn4.grid(row=1, column=0)
-controlButtonList.append(btn4)
-btn5 = Button(frame, text="", name="btn5", command=lambda: buttonClick(5))
-btn5.grid(row=1, column=1)
-controlButtonList.append(btn5)
-btn6 = Button(frame, text="", name="btn6", command=lambda: buttonClick(6))
-btn6.grid(row=1, column=2)
-controlButtonList.append(btn6)
-btn7 = Button(frame, text="", name="btn7", command=lambda: buttonClick(7))
-btn7.grid(row=2, column=0)
-controlButtonList.append(btn7)
-btn8 = Button(frame, text="", name="btn8", command=lambda: buttonClick(8))
-btn8.grid(row=2, column=1)
-controlButtonList.append(btn8)
-btn9 = Button(frame, text="", name="btn9", command=lambda: buttonClick(9))
-btn9.grid(row=2, column=2)
-controlButtonList.append(btn9)
-"""
+
