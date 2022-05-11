@@ -4,6 +4,7 @@ import tkinter.scrolledtext as st
 from PIL import Image
 import numpy as np
 import random
+import time
 import player
 
 
@@ -45,14 +46,14 @@ def createField(canvasName):
     for i in range(0, mapTrack.shape[0]):
         for j in range(0, mapTrack.shape[1]):
             if mapTrack[i][j] == -1:
-                temp = canvasName.create_rectangle(0, 0, rectange_size, rectange_size, fill="red")
+                temp = canvasName.create_rectangle(0, 0, rectangeSize, rectangeSize, fill="red")
             elif mapTrack[i][j] == 0:
-                temp = canvasName.create_rectangle(0, 0, rectange_size, rectange_size, fill="green")
+                temp = canvasName.create_rectangle(0, 0, rectangeSize, rectangeSize, fill="green")
             elif mapTrack[i][j] == 100:
-                temp = canvasName.create_rectangle(0, 0, rectange_size, rectange_size, fill="white")
+                temp = canvasName.create_rectangle(0, 0, rectangeSize, rectangeSize, fill="white")
             elif (mapTrack[i][j] == 1):
-                temp = canvasName.create_rectangle(0, 0, rectange_size, rectange_size, fill="blue")
-            canvasName.move(temp, int((i - 0.5) * rectange_size), int((j - 0.5) * rectange_size))
+                temp = canvasName.create_rectangle(0, 0, rectangeSize, rectangeSize, fill="blue")
+            canvasName.move(temp, int((i - 0.5) * rectangeSize), int((j - 0.5) * rectangeSize))
 
 
 def getRandomStartPosition():
@@ -107,10 +108,10 @@ def drawPlayer(canvasName, player, radius):
     yCenter = pos[1] + (pos[1] - oldPos[1])
     for i in range(-1, 2):
         for j in range(-1, 2):
-            create_circle((xCenter + i) * rectange_size, (yCenter + j) * rectange_size, radius-1, canvasName, "",
+            create_circle((xCenter + i) * rectangeSize, (yCenter + j) * rectangeSize, radius - 1, canvasName, "",
                           player.getColor(), 1)
 
-    create_circle(pos[0] * rectange_size, pos[1] * rectange_size, radius, canvasName, player.getColor(), "black", 1)
+    create_circle(pos[0] * rectangeSize, pos[1] * rectangeSize, radius, canvasName, player.getColor(), "black", 1)
 
 
 def drawPlayerPath(canvasName, player):
@@ -121,11 +122,11 @@ def drawPlayerPath(canvasName, player):
     """
     path = player.getVisitedPositions()
     for i in range(0, len(path) - 1):
-        create_circle(path[i][0] * rectange_size, path[i][1] * rectange_size, 3, canvasName, player.getColor(), "black",
+        create_circle(path[i][0] * rectangeSize, path[i][1] * rectangeSize, 3, canvasName, player.getColor(), "black",
                       1)
-        canvasName.create_line(path[i][0] * rectange_size, path[i][1] * rectange_size, path[i + 1][0] * rectange_size,
-                               path[i + 1][1] * rectange_size, fill=player.getColor(), width=2)
-    create_circle(path[-1][0] * rectange_size, path[-1][1] * rectange_size, 3, canvasName, player.getColor(), "black",
+        canvasName.create_line(path[i][0] * rectangeSize, path[i][1] * rectangeSize, path[i + 1][0] * rectangeSize,
+                               path[i + 1][1] * rectangeSize, fill=player.getColor(), width=2)
+    create_circle(path[-1][0] * rectangeSize, path[-1][1] * rectangeSize, 3, canvasName, player.getColor(), "black",
                   1)
 
 
@@ -140,6 +141,7 @@ def updateCanvas(canvasName, playerList):
     for player in playerList:
         drawPlayer(canvasName, player, 4)
         drawPlayerPath(canvasName, player)
+    time.sleep(0.4)
 
 
 def validMovement(player):
@@ -278,6 +280,8 @@ def addButtonAction():
         text1.pack_forget()
         label1.config(text="No more player can be added!")
 
+def moveFunction(mapTrack):
+    return [0, 0]
 
 def startButtonAction():
     if len(playerList) > 0:
@@ -285,59 +289,134 @@ def startButtonAction():
         text1.pack_forget()
         label1.pack_forget()
         startButton.pack_forget()
+        codeArea.pack_forget()
         textArea.pack(side=LEFT)
-        frameButton.pack(side=RIGHT, padx=10)
+        if not modeCoding:
+            frameButton.pack(side=RIGHT, padx=10)
+        else:
+            codeToRun = codeArea.get('1.0', 'end') + "\n"
+            eval(codeToRun)
+            """
+            for i in range(0, 5):
+                nextMove = moveFunction(mapTrack)
+                buttonClick(canvas, nextMove[0], nextMove[1])
+            """
+
         updateCanvas(canvas, playerList)
         drawPlayer(canvas, currentPlayerList[-1], 6)
         writeTextArea(playerList[-1].getName() + " is to move (step #" + str(currentPlayerList[-1].getStepNumber()) + ")")
     else:
         label1.config(text="No player is added! Add a player!")
 
+def selectMapButtonAction(mapName):
+    canvas.pack(side=TOP, padx=50, pady=10)
+    global mapTrack
+    mapTrack = loadTrack(mapName)
+    xSize = np.ceil(eval(canvas.cget("height")) / mapTrack.shape[0])
+    ySize = np.ceil(eval(canvas.cget("width")) / mapTrack.shape[1])
+    global rectangeSize
+    rectangeSize = min(xSize, ySize)
+    createField(canvas)
+    updateCanvas(canvas, playerList)
+    for i in mapButtonList:
+        i.pack_forget()
+    manualBtn.pack(side=LEFT)
+    codeBtn.pack(side=LEFT, padx=10)
 
-main = Tk()
-main.title("Grid race")
-main.geometry("800x800")
+def manualMode():
+    manualBtn.pack_forget()
+    codeBtn.pack_forget()
+    label1.pack()
+    text1.pack(side=LEFT)
+    buttonAdd.pack(side=LEFT, padx=10)
+    startButton.pack(padx=10)
+
+def codingMode():
+    manualBtn.pack_forget()
+    codeBtn.pack_forget()
+    label1.pack()
+    codeArea.pack(side=BOTTOM)
+    text1.pack(side=LEFT)
+    buttonAdd.pack(side=LEFT, padx=5)
+    startButton.pack(side=LEFT, padx=5)
+    global modeCoding
+    modeCoding = True
+
+root = Tk()
+root.title("Grid race")
+root.geometry("800x800")
 
 controlButtonList = []
 startPositions = []
 finishPositions = []
 playerList = []
 currentPlayerList = []
+mapButtonList = []
+modeCoding = False
 colors = ['#822A8A', '#A8A228', '#00FF00', '#C9FF00', '#6688CC', '#88CC66']
 
-canvas = Canvas(main, width=800, height=600)
-canvas.pack(side=TOP, padx=100, pady=10)
+canvas = Canvas(root, width=800, height=550)
 
-mapTrack = loadTrack("straight.png")
 
-x_size = eval(canvas.cget("height")) // mapTrack.shape[0]
-y_size = eval(canvas.cget("width")) // mapTrack.shape[1]
-rectange_size = min(x_size, y_size)
-
-createField(canvas)
-
-frameRoot = Frame(main)
+frameRoot = Frame(root)
 frameRoot.pack(side=BOTTOM, pady=(0, 50))
+
+#Select map
+mapNames = ["straight.png", 'small1.png', 'small2.png', 'large1.png', 'large2.png']
+labelMap = Label(frameRoot, text="Choose a map:")
+labelMap.config(font=12)
+labelMap.pack()
+mapButtonList.append(labelMap)
+photo = tk.PhotoImage(file=mapNames[0])
+b1 = Button(frameRoot, image=photo, command=lambda: selectMapButtonAction(mapNames[0]))
+b1.pack(side=LEFT, padx=5)
+mapButtonList.append(b1)
+photo2 = tk.PhotoImage(file=mapNames[1])
+b2 = Button(frameRoot, image=photo2, command=lambda: selectMapButtonAction(mapNames[1]))
+b2.pack(side=LEFT, padx=5)
+mapButtonList.append(b2)
+photo3 = tk.PhotoImage(file=mapNames[2])
+b3=Button(frameRoot, image=photo3, command=lambda: selectMapButtonAction(mapNames[2]))
+b3.pack(side=LEFT, padx=5)
+mapButtonList.append(b3)
+photo4 = tk.PhotoImage(file=mapNames[3])
+b4 = Button(frameRoot, image=photo4, command=lambda: selectMapButtonAction(mapNames[3]))
+b4.pack(side=LEFT, padx=5)
+mapButtonList.append(b4)
+photo5 = tk.PhotoImage(file=mapNames[4])
+b5 = Button(frameRoot, image=photo5, command=lambda: selectMapButtonAction(mapNames[4]))
+b5.pack(side=LEFT, padx=5)
+mapButtonList.append(b5)
+
+"""
+for i in range(0, len(mapNames)):
+    photo = tk.PhotoImage(file=mapNames[i])
+    temp = Button(frameRoot, image=photo, command=lambda: selectMapButtonAction(mapNames[i]))
+    temp.pack(side=LEFT, padx=5)
+    mapButtonList.append(temp)
+"""
+
+#Select mode
+manualBtn = Button(frameRoot, width=5, height=1, text="Manual", command=lambda: manualMode())
+codeBtn = Button(frameRoot, width=5, height=1, text="Coding", command=lambda: codingMode())
+
+
+
 
 label1 = Label(frameRoot, text="Add new player:")
 label1.config(font=12)
-label1.pack()
 text1 = Text(frameRoot, width=20, height=1)
-text1.pack(side=LEFT)
 buttonAdd = Button(frameRoot, width=3, height=1, text="Add", command=lambda: addButtonAction())
-buttonAdd.pack(side=LEFT, padx=10)
 startButton = Button(frameRoot, width=5, height=1, text="Start", command=lambda: startButtonAction())
-startButton.pack(padx=10)
 
 textArea = st.ScrolledText(frameRoot, width=60, height=10, font=12)
 # text_area.pack(side=LEFT)
 writeTextArea("Grid game")
-writeTextArea("Test")
 
-# startPos = getRandomStartPosition()
-# player1 = player.Player("player1", startPos[0], startPos[1], "yellow")
+codeArea = st.ScrolledText(frameRoot, width=60, height=10, font=12)
+codeArea.insert(tk.INSERT, "Write your code here!")
 
-
+# Manual mode
 frameButton = Frame(frameRoot)
 # frameButton.pack(side=RIGHT, padx=10)
 for i in range(0, 9):
@@ -356,4 +435,4 @@ controlButtonList[7].config(text="↓", command=lambda: buttonClick(canvas, 0, 1
 controlButtonList[8].config(text="↘", command=lambda: buttonClick(canvas, 1, 1))
 
 if __name__ == "__main__":
-    main.mainloop()
+    root.mainloop()
