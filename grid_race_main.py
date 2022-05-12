@@ -134,8 +134,8 @@ def drawPlayerPath(canvasName, player):
 def updateCanvas(canvasName, playerList):
     """
     After each step update the canvas: player position, path and possible next positions
-    :param canvasName:
-    :param player:
+    :param canvasName: canvas
+    :param playerList: list of all players
     """
     canvasName.delete("all")
     createField(canvasName)
@@ -145,6 +145,11 @@ def updateCanvas(canvasName, playerList):
     #time.sleep(0.4)
 
 def nextPlayerToMove(currentPlayerList):
+    """
+    Give back the next player who can move
+    :param currentPlayerList: list of not finished players
+    :return: next player
+    """
     currentPlayer = currentPlayerList.pop()
     numOfPenalty = currentPlayer.getPenaltyRounds()
     while numOfPenalty > 0:
@@ -196,6 +201,10 @@ def buttonClick(canvasName, x, y):
 
 
 def writeTextArea(string):
+    """
+    Add text to the textArea, which logs the actions
+    :param string: text to be added
+    """
     textArea.configure(state='normal')
     textArea.insert(tk.INSERT, string + "\n")
     textArea.configure(state='disabled')
@@ -203,6 +212,10 @@ def writeTextArea(string):
 
 
 def addButtonAction(ai):
+    """
+    Add the given players to the list of players, defined by name
+    :param ai: if the player is AI then true, if manual it is false
+    """
     if len(startPositions) > 0:
         startPos = getRandomStartPosition()
         s = text1.get('1.0', 'end')
@@ -224,37 +237,10 @@ def addButtonAction(ai):
         label1.config(text="No more player can be added!")
 
 
-#def moveFunction(mapTrack, currentPlayerList, selfIdx):
-#    return [0, 0]
-
-"""
-def codeMoveFunction():
-    if len(currentPlayerList) > 0:
-        currentPlayer = nextPlayerToMove(currentPlayerList)
-
-        selfIdx = playerList.index(currentPlayer)
-        currentPlayer.movePlayer()
-        currentPlayer.step()
-        stepNum = str(currentPlayer.getStepNumber())
-        if not validMovement(currentPlayer):
-            currentPlayer.penalty()
-            writeTextArea(
-                currentPlayer.getName() + " is out of track or collided with other player. Penalty for 5 rounds. (step #" + stepNum + ")")
-
-        if not isFinished(currentPlayer.getPos()):
-            currentPlayerList.insert(0, currentPlayer)
-        else:
-            writeTextArea(currentPlayer.getName() + " has reached the finish position. (step #" + stepNum + ")")
-
-        updateCanvas(canvas, playerList)
-        if len(currentPlayerList) > 0:
-            nextPlayer = nextPlayerToMove(currentPlayerList)
-            currentPlayerList.append(nextPlayer)
-            writeTextArea(nextPlayer.getName() + " is to move (step #" + str(nextPlayer.getStepNumber()) + ")")
-            drawPlayer(canvas, nextPlayer, 6)
-"""
-
 def startButtonAction():
+    """
+    Start the game after the players are added
+    """
     if len(playerList) > 0:
         functions.createZombieMap(mapTrack)
         buttonAdd.pack_forget()
@@ -262,25 +248,21 @@ def startButtonAction():
         text1.pack_forget()
         label1.pack_forget()
         startButton.pack_forget()
-        #codeArea.pack_forget()
         textArea.pack(side=LEFT)
-
-        """
-        for i in range(0, 5):
-            nextMove = moveFunction(mapTrack)
-            buttonClick(canvas, nextMove[0], nextMove[1])
-        """
 
         updateCanvas(canvas, playerList)
         drawPlayer(canvas, currentPlayerList[-1], 6)
         writeTextArea(playerList[-1].getName() + " is to move (step #" + str(currentPlayerList[-1].getStepNumber()) + ")")
 
-        #if not modeCoding:
         frameButton.pack(side=RIGHT, padx=10)
     else:
         label1.config(text="No player is added! Add a player!")
 
 def selectMapButtonAction(mapName):
+    """
+    Button with a background of the map can be chosen as a map
+    :param mapName: name of the chosen map
+    """
     canvas.pack(side=TOP, padx=50, pady=10)
     global mapTrack
     mapTrack = loadTrack(mapName)
@@ -297,29 +279,6 @@ def selectMapButtonAction(mapName):
     buttonAdd.pack(side=LEFT, padx=10)
     buttonAiAdd.pack(side=LEFT, padx=10)
     startButton.pack(padx=10)
-    #manualBtn.pack(side=LEFT)
-    #codeBtn.pack(side=LEFT, padx=10)
-
-"""
-def manualMode():
-    manualBtn.pack_forget()
-    codeBtn.pack_forget()
-    label1.pack()
-    text1.pack(side=LEFT)
-    buttonAdd.pack(side=LEFT, padx=10)
-    startButton.pack(padx=10)
-
-def codingMode():
-    manualBtn.pack_forget()
-    codeBtn.pack_forget()
-    label1.pack()
-    codeArea.pack(side=BOTTOM)
-    text1.pack(side=LEFT)
-    buttonAdd.pack(side=LEFT, padx=5)
-    startButton.pack(side=LEFT, padx=5)
-    global modeCoding
-    modeCoding = True
-"""
 
 root = Tk()
 root.title("Grid race")
@@ -331,16 +290,15 @@ finishPositions = []
 playerList = []
 currentPlayerList = []
 mapButtonList = []
-#modeCoding = False
+
 colors = ['#822A8A', '#A8A228', '#00FF00', '#C9FF00', '#6688CC', '#88CC66']
 
 canvas = Canvas(root, width=800, height=550)
 
-
 frameRoot = Frame(root)
 frameRoot.pack(side=BOTTOM, pady=(0, 50))
 
-#Select map
+#Select the map
 mapNames = ["straight.png", 'small1.png', 'small2.png', 'large1.png', 'large2.png']
 labelMap = Label(frameRoot, text="Choose a map:")
 labelMap.config(font=12)
@@ -367,21 +325,6 @@ b5 = Button(frameRoot, image=photo5, command=lambda: selectMapButtonAction(mapNa
 b5.pack(side=LEFT, padx=5)
 mapButtonList.append(b5)
 
-"""
-for i in range(0, len(mapNames)):
-    photo = tk.PhotoImage(file=mapNames[i])
-    temp = Button(frameRoot, image=photo, command=lambda: selectMapButtonAction(mapNames[i]))
-    temp.pack(side=LEFT, padx=5)
-    mapButtonList.append(temp)
-"""
-
-#Select mode
-#manualBtn = Button(frameRoot, width=5, height=1, text="Manual", command=lambda: manualMode())
-#codeBtn = Button(frameRoot, width=5, height=1, text="Coding", command=lambda: codingMode())
-
-
-
-
 label1 = Label(frameRoot, text="Add new player:")
 label1.config(font=12)
 text1 = Text(frameRoot, width=20, height=1)
@@ -397,9 +340,8 @@ writeTextArea("Grid game")
 codeArea = st.ScrolledText(frameRoot, width=60, height=10, font=12)
 codeArea.insert(tk.INSERT, "Write your code here!")
 
-# Manual mode
+# Control buttons
 frameButton = Frame(frameRoot)
-# frameButton.pack(side=RIGHT, padx=10)
 for i in range(0, 9):
     temp = Button(frameButton, name=str(i), width=2, height=2)
     temp.grid(row=i // 3, column=i % 3)

@@ -73,6 +73,11 @@ def equalPoints(pos1, pos2):
     return False
 
 def createZombieMap(mapTrack):
+    """
+    Generate a zombie array based on the given map
+    :param mapTrack: map of the track
+    :return: generated zombieArray
+    """
     lx = mapTrack.shape[0]
     ly = mapTrack.shape[1]
 
@@ -102,6 +107,14 @@ def createZombieMap(mapTrack):
     return zombieArray
 
 def validMoves(mapTrack, playerList, oldPos, pos):
+    """
+    Give back the valid directions and positions of the next movement from the current position
+    :param mapTrack: map of the track
+    :param playerList: list of players
+    :param oldPos: previous position of the player
+    :param pos: current position of the player
+    :return: [valid directions, valid positions]
+    """
     xCenter = pos[0] + (pos[0] - oldPos[0])
     yCenter = pos[1] + (pos[1] - oldPos[1])
 
@@ -118,6 +131,16 @@ def validMoves(mapTrack, playerList, oldPos, pos):
 
 
 def moveBestNStemDirection(mapTrack, playerList, oldPos, pos, zombieArray, numOfStep):
+    """
+    Return the best possible direction of the next movement
+     :param mapTrack: map of the track
+    :param playerList: list of players
+    :param oldPos: previous position of the player
+    :param pos: current position of the player
+    :param zombieArray: predetermined zombie array
+    :param numOfStep: steps to look ahead
+    :return: the best possible direction of the next movement
+    """
     stepArray = []                  #store the steps
     nextPos = pos
     nextDir = [0, 0]                #direction to move
