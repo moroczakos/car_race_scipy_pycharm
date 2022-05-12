@@ -6,6 +6,7 @@ import numpy as np
 import random
 import time
 import player
+import functions
 
 
 def loadTrack(imageName):
@@ -141,75 +142,7 @@ def updateCanvas(canvasName, playerList):
     for player in playerList:
         drawPlayer(canvasName, player, 4)
         drawPlayerPath(canvasName, player)
-    time.sleep(0.4)
-
-
-def validMovement(player):
-    """
-    Next position is valid or not (on the track, or on the other player)
-    :param player: player
-    :return: True/False
-    """
-    pos = player.getPos()
-    if mapTrack[pos[0]][pos[1]] < 0:
-        return False
-    for i in range(0, len(playerList)):
-        if (i != playerAt(pos)) & equalPoints(pos, playerList[i].getPos()):
-            return False
-    return True
-
-
-def validLine(pos1, pos2):
-    """
-    The line between the two position (matrix: [x , y]) is on the track or not
-    :param pos1: position 1
-    :param pos2: position 2
-    :return: True/False
-    """
-    dx = pos2[0] - pos1[0]
-    dy = pos2[1] - pos1[1]
-
-    if np.abs(dx) > 0:
-        d = dy / dx
-        for i in range(0, np.abs(dx) + 1):
-            tx = pos1[0] + i * np.sign(dx)
-            tyf = int(np.floor(pos1[1] + i * d * np.sign(dx)))
-            tyc = int(np.ceil(pos1[1] + i * d * np.sign(dx)))
-            if (mapTrack[tx][tyf] < 0) & (mapTrack[tx][tyc] < 0):
-                return False
-    if np.abs(dy) > 0:
-        d = dx / dy
-        for i in range(0, np.abs(dy) + 1):
-            ty = pos1[1] + i * np.sign(dy)
-            txf = int(np.floor(pos1[0] + i * d * np.sign(dy)))
-            txc = int(np.ceil(pos1[0] + i * d * np.sign(dy)))
-            if (mapTrack[txf][ty] < 0) & (mapTrack[txc][ty] < 0):
-                return False
-    return True
-
-
-def playerAt(pos):
-    """
-    Return the index of that player at given position, otherwise -1
-    :param pos: position [x, y]
-    :return: index of player it exist or -1
-    """
-    for i in range(0, len(playerList)):
-        if equalPoints(pos, playerList[i].getPos()):
-            return i
-    return -1
-
-
-def equalPoints(pos1, pos2):
-    """
-    If two positions are the same
-    :param pos1: position 1 [x, y]
-    :param pos2: position 2 [x, y]
-    :return: True/False
-    """
-    if (pos1[0] == pos2[0]) & (pos1[1] == pos2[1]):
-        return True
-    return False
+    #time.sleep(0.4)
 
 def nextPlayerToMove(currentPlayerList):
     currentPlayer = currentPlayerList.pop()
@@ -230,14 +163,14 @@ def buttonClick(canvasName, x, y):
     :param x: move direction x
     :param y: move direction y
     """
-    # print(x, y)
     if len(currentPlayerList) > 0:
         currentPlayer = nextPlayerToMove(currentPlayerList)
 
         currentPlayer.move(x, y)
+        updateCanvas(canvasName, playerList)
         currentPlayer.step()
         stepNum = str(currentPlayer.getStepNumber())
-        if not validMovement(currentPlayer):
+        if not functions.validMovement(mapTrack, playerList, currentPlayer.getOldPos(), currentPlayer.getPos()):
             currentPlayer.penalty()
             writeTextArea(currentPlayer.getName() + " is out of track or collided with other player. Penalty for 5 rounds. (step #" + stepNum + ")")
 
@@ -246,13 +179,18 @@ def buttonClick(canvasName, x, y):
         else:
             writeTextArea(currentPlayer.getName() + " has reached the finish position. (step #" + stepNum + ")")
 
-
-        updateCanvas(canvasName, playerList)
         if len(currentPlayerList) > 0:
             nextPlayer = nextPlayerToMove(currentPlayerList)
             currentPlayerList.append(nextPlayer)
             writeTextArea(nextPlayer.getName() + " is to move (step #" + str(nextPlayer.getStepNumber()) + ")")
             drawPlayer(canvasName, nextPlayer, 6)
+            if nextPlayer.isAi() & (not isFinished(nextPlayer.getPos())):
+                pos = nextPlayer.aiMove(mapTrack, playerList)
+                buttonClick(canvasName, pos[0], pos[1])
+
+    if len(currentPlayerList) == 0:
+        writeTextArea("The game has finished!")
+        frameButton.pack_forget()
     # print(index)
     # print(isFinished(currentPlayer.getPos()))
 
@@ -264,47 +202,81 @@ def writeTextArea(string):
     textArea.yview(END)
 
 
-def addButtonAction():
+def addButtonAction(ai):
     if len(startPositions) > 0:
         startPos = getRandomStartPosition()
         s = text1.get('1.0', 'end')
         s = s.strip()
         if s == "":
             s = "Player" + len(startPositions)
-        tempPlayer = player.Player(s, startPos[0], startPos[1], colors.pop())
-        playerList.insert(0, tempPlayer)
+        tempPlayer = player.Player(s, startPos[0], startPos[1], colors.pop(), ai)
+        #if modeCoding:
+        #    tempPlayer.setMoveFunction(eval(codeArea.get('1.0', 'end')))
+
+        playerList.append(tempPlayer)
         currentPlayerList.insert(0, tempPlayer)
         text1.delete('1.0', 'end')
-    else:
+        text1.insert(tk.INSERT, "Give a name")
+    if len(startPositions) == 0:
         buttonAdd.pack_forget()
+        buttonAiAdd.pack_forget()
         text1.pack_forget()
         label1.config(text="No more player can be added!")
 
-def moveFunction(mapTrack):
-    return [0, 0]
+
+#def moveFunction(mapTrack, currentPlayerList, selfIdx):
+#    return [0, 0]
+
+"""
+def codeMoveFunction():
+    if len(currentPlayerList) > 0:
+        currentPlayer = nextPlayerToMove(currentPlayerList)
+
+        selfIdx = playerList.index(currentPlayer)
+        currentPlayer.movePlayer()
+        currentPlayer.step()
+        stepNum = str(currentPlayer.getStepNumber())
+        if not validMovement(currentPlayer):
+            currentPlayer.penalty()
+            writeTextArea(
+                currentPlayer.getName() + " is out of track or collided with other player. Penalty for 5 rounds. (step #" + stepNum + ")")
+
+        if not isFinished(currentPlayer.getPos()):
+            currentPlayerList.insert(0, currentPlayer)
+        else:
+            writeTextArea(currentPlayer.getName() + " has reached the finish position. (step #" + stepNum + ")")
+
+        updateCanvas(canvas, playerList)
+        if len(currentPlayerList) > 0:
+            nextPlayer = nextPlayerToMove(currentPlayerList)
+            currentPlayerList.append(nextPlayer)
+            writeTextArea(nextPlayer.getName() + " is to move (step #" + str(nextPlayer.getStepNumber()) + ")")
+            drawPlayer(canvas, nextPlayer, 6)
+"""
 
 def startButtonAction():
     if len(playerList) > 0:
+        functions.createZombieMap(mapTrack)
         buttonAdd.pack_forget()
+        buttonAiAdd.pack_forget()
         text1.pack_forget()
         label1.pack_forget()
         startButton.pack_forget()
-        codeArea.pack_forget()
+        #codeArea.pack_forget()
         textArea.pack(side=LEFT)
-        if not modeCoding:
-            frameButton.pack(side=RIGHT, padx=10)
-        else:
-            codeToRun = codeArea.get('1.0', 'end') + "\n"
-            eval(codeToRun)
-            """
-            for i in range(0, 5):
-                nextMove = moveFunction(mapTrack)
-                buttonClick(canvas, nextMove[0], nextMove[1])
-            """
+
+        """
+        for i in range(0, 5):
+            nextMove = moveFunction(mapTrack)
+            buttonClick(canvas, nextMove[0], nextMove[1])
+        """
 
         updateCanvas(canvas, playerList)
         drawPlayer(canvas, currentPlayerList[-1], 6)
         writeTextArea(playerList[-1].getName() + " is to move (step #" + str(currentPlayerList[-1].getStepNumber()) + ")")
+
+        #if not modeCoding:
+        frameButton.pack(side=RIGHT, padx=10)
     else:
         label1.config(text="No player is added! Add a player!")
 
@@ -320,9 +292,15 @@ def selectMapButtonAction(mapName):
     updateCanvas(canvas, playerList)
     for i in mapButtonList:
         i.pack_forget()
-    manualBtn.pack(side=LEFT)
-    codeBtn.pack(side=LEFT, padx=10)
+    label1.pack()
+    text1.pack(side=LEFT)
+    buttonAdd.pack(side=LEFT, padx=10)
+    buttonAiAdd.pack(side=LEFT, padx=10)
+    startButton.pack(padx=10)
+    #manualBtn.pack(side=LEFT)
+    #codeBtn.pack(side=LEFT, padx=10)
 
+"""
 def manualMode():
     manualBtn.pack_forget()
     codeBtn.pack_forget()
@@ -341,6 +319,7 @@ def codingMode():
     startButton.pack(side=LEFT, padx=5)
     global modeCoding
     modeCoding = True
+"""
 
 root = Tk()
 root.title("Grid race")
@@ -352,7 +331,7 @@ finishPositions = []
 playerList = []
 currentPlayerList = []
 mapButtonList = []
-modeCoding = False
+#modeCoding = False
 colors = ['#822A8A', '#A8A228', '#00FF00', '#C9FF00', '#6688CC', '#88CC66']
 
 canvas = Canvas(root, width=800, height=550)
@@ -367,8 +346,8 @@ labelMap = Label(frameRoot, text="Choose a map:")
 labelMap.config(font=12)
 labelMap.pack()
 mapButtonList.append(labelMap)
-photo = tk.PhotoImage(file=mapNames[0])
-b1 = Button(frameRoot, image=photo, command=lambda: selectMapButtonAction(mapNames[0]))
+photo1 = tk.PhotoImage(file=mapNames[0])
+b1 = Button(frameRoot, image=photo1, command=lambda: selectMapButtonAction(mapNames[0]))
 b1.pack(side=LEFT, padx=5)
 mapButtonList.append(b1)
 photo2 = tk.PhotoImage(file=mapNames[1])
@@ -397,8 +376,8 @@ for i in range(0, len(mapNames)):
 """
 
 #Select mode
-manualBtn = Button(frameRoot, width=5, height=1, text="Manual", command=lambda: manualMode())
-codeBtn = Button(frameRoot, width=5, height=1, text="Coding", command=lambda: codingMode())
+#manualBtn = Button(frameRoot, width=5, height=1, text="Manual", command=lambda: manualMode())
+#codeBtn = Button(frameRoot, width=5, height=1, text="Coding", command=lambda: codingMode())
 
 
 
@@ -406,7 +385,9 @@ codeBtn = Button(frameRoot, width=5, height=1, text="Coding", command=lambda: co
 label1 = Label(frameRoot, text="Add new player:")
 label1.config(font=12)
 text1 = Text(frameRoot, width=20, height=1)
-buttonAdd = Button(frameRoot, width=3, height=1, text="Add", command=lambda: addButtonAction())
+text1.insert(tk.INSERT, "Give a name")
+buttonAdd = Button(frameRoot, width=3, height=1, text="Add", command=lambda: addButtonAction(False))
+buttonAiAdd = Button(frameRoot, width=10, height=1, text="Add AI player", command=lambda: addButtonAction(True))
 startButton = Button(frameRoot, width=5, height=1, text="Start", command=lambda: startButtonAction())
 
 textArea = st.ScrolledText(frameRoot, width=60, height=10, font=12)

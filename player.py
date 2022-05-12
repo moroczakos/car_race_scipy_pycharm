@@ -1,5 +1,10 @@
+import random
+
+import functions
+
+
 class Player:
-    def __init__(self, name, xPos, yPos, color):
+    def __init__(self, name, xPos, yPos, color, ai):
         self.name = name
         self.xPos = xPos
         self.yPos = yPos
@@ -10,9 +15,16 @@ class Player:
         self.color = color
         self.penaltyRounds = 0
         self.stepNumber = 1
+        self.moveFunction = None
+        self.ai = ai
 
     def getName(self):
         return self.name
+
+    def nextPosition(self, x, y):
+        xCenter = self.xPos + (self.xPos - self.xOldPos)
+        yCenter = self.yPos + (self.yPos - self.yOldPos)
+        return [xCenter + x, yCenter + y]
 
     def move(self, x, y):
         xCenter = self.xPos + (self.xPos - self.xOldPos)
@@ -23,6 +35,42 @@ class Player:
         self.yPos = yCenter + y
         self.visitedPositions.append([self.xPos, self.yPos])
         #print(validLine(self.getOldPos(), self.getPos()))
+
+    def isAi(self):
+        return self.ai
+
+    def aiMove(self, mapTrack, playerList):
+        """
+        i = random.randint(-1, 1)
+        j = random.randint(-1, 1)
+        print(i,j)
+
+        if functions.validMovement(mapTrack, playerList, self.getPos(), self.nextPosition(i,j)):
+            print("true")
+            #return [i, j]
+        else:
+            print("false")
+
+        return [1, 0]
+        """
+        self.zombieArray = functions.createZombieMap(mapTrack)
+        return functions.moveBestNStemDirection(mapTrack, playerList, self.getOldPos(), self.getPos(), self.zombieArray, 8)
+
+        try:
+            return functions.moveBestNStemDirection(mapTrack, playerList, self.getOldPos(), self.getPos(), self.zombieArray, 8)
+        except Exception:
+            return [0, 0]
+
+
+
+    """
+    def movePlayer(self):
+        result = self.moveFunction
+        self.move(result[0], result[1])
+
+    def setMoveFunction(self, moveFunction):
+        self.moveFunction = moveFunction
+    """
 
     def setPenaltyRounds(self, numOfPenalty):
         self.penaltyRounds = numOfPenalty
